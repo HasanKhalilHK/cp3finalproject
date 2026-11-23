@@ -1,13 +1,15 @@
 import random
+from flight_record import FlightRecord
 
 class SlotState: #! from ai 
     empty = 0
     occupied = 1
     tombstone = 2
 
-class FlightRegistryRecord:
-    def __init__(self, flight_id=-1):
-        self.flight_id = flight_id
+class FlightRegistryRecord(FlightRecord):
+    
+    def __init__(self, flight_id="", airline="", origin="", destination="", runway="", start_time="", end_time="", priority=-1, status=""):
+        super().__init__(flight_id, airline, origin, destination, runway, start_time, end_time, priority, status)
         self.slot_state =  SlotState.empty
 
 
