@@ -64,7 +64,7 @@ class FlightRegistry:
             slot = self.table[i]
 
             if slot.slot_state == SlotState.occupied and slot.flight_id == record.flight_id:
-                return #TODO: return error for duplicate record
+                return {"success" : False, "reason": "Record already exists", "probes" : probes, "collisions": collisions, "load_factor": self.load_factor}
             
             if slot.slot_state == SlotState.occupied and slot.flight_id != record.flight_id:
                 collisions += 1
@@ -84,7 +84,7 @@ class FlightRegistry:
                 self.table[target].slot_state = SlotState.occupied
                 self.items += 1
                 self.calc_load_factor()
-                return #TODO: return successful insert
+                return {"success" : True, "probes" : probes, "collisions": collisions, "load_factor": self.load_factor}
 
             i = (i + 1) % self.m #loop around if probing reaches end of table
 
@@ -99,14 +99,14 @@ class FlightRegistry:
 
             if slot.slot_state == SlotState.occupied:
                 if slot.flight_id == flight_id:
-                    return #TODO: return record with appropriate message
+                    return {"success" : True, "record": slot,  "probes" : probes}
 
             if slot.slot_state == SlotState.empty:
-                return #TODO: return error for missing id
+                return {"success" : False, "reason": "Record doesn't exist", "probes" : probes}
 
             i = (i + 1) % self.m #loop around if probing reaches end of table
 
-        return #TODO: return error for missing id (in this case because table was completely full)
+        return {"success" : False, "reason": "Record doesn't exist", "probes" : probes}
 
 
     def delete(self, flight_id):
@@ -125,14 +125,14 @@ class FlightRegistry:
                     self.table[i] = tombestone
                     self.tombstones += 1
                     self.items -= 1
-                    return #TODO: return success for deleting record
+                    return {"success" : True, "probes" : probes}
 
             if slot.slot_state == SlotState.empty:
-                return #TODO: return error for missing id 
+                return {"success" : False, "reason": "Record doesn't exist", "probes" : probes}
 
             i = (i + 1) % self.m #loop around if probing reaches end of table
 
-        return #TODO: return error for missing id (in this case because table was completely full)
+        return {"success" : False, "reason": "Record doesn't exist", "probes" : probes}
 
 
     def print_table(self):
@@ -149,6 +149,8 @@ class FlightRegistry:
             
 
 
+
+#testing
 reg = FlightRegistry()
 
 print(reg.h(reg.id_to_int("NK10687")))
@@ -170,4 +172,7 @@ reg.insert(FlightRegistryRecord("UA10223"))
 reg.insert(FlightRegistryRecord("AA10371"))
 # reg.insert(FlightRegistryRecord("B610625"))
 
+reg.print_table()
+
+reg.delete("NK10687")
 reg.print_table()
