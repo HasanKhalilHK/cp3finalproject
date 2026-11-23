@@ -88,6 +88,29 @@ class FlightRegistry:
 
             i = (i + 1) % self.m #loop around if probing reaches end of table
 
+    def lookup(self, flight_id):
+        probes = 0
+        id = self.id_to_int(flight_id)
+        i = self.h(id)
+
+        for _ in self.table:
+            probes += 1
+            slot = self.table[i]
+
+            if slot.slot_state == SlotState.occupied:
+                if slot.flight_id == flight_id:
+                    return #TODO: return record with appropriate message
+
+            if slot.slot_state == SlotState.empty:
+                return #TODO: return error for missing id
+
+            i = (i + 1) % self.m #loop around if probing reaches end of table
+
+        return #TODO: return error for missing id (in this case because table was completely full)
+
+
+
+
     def print_table(self):
         print(f"m: {self.m}")
         print(f"items: {self.items}")
