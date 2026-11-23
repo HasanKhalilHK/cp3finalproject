@@ -109,6 +109,30 @@ class FlightRegistry:
         return #TODO: return error for missing id (in this case because table was completely full)
 
 
+    def delete(self, flight_id):
+        probes = 0
+        id = self.id_to_int(flight_id)
+        i = self.h(id)
+
+        for _ in self.table:
+            probes += 1
+            slot = self.table[i]
+            
+            if slot.slot_state == SlotState.occupied:
+                if slot.flight_id == flight_id:
+                    tombestone = FlightRegistryRecord()
+                    tombestone.slot_state = SlotState.tombstone
+                    self.table[i] = tombestone
+                    self.tombstones += 1
+                    self.items -= 1
+                    return #TODO: return success for deleting record
+
+            if slot.slot_state == SlotState.empty:
+                return #TODO: return error for missing id 
+
+            i = (i + 1) % self.m #loop around if probing reaches end of table
+
+        return #TODO: return error for missing id (in this case because table was completely full)
 
 
     def print_table(self):
