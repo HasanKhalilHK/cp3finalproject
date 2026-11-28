@@ -1,26 +1,12 @@
 from datetime import datetime
+from registry import reg
+from flight_record import convert_time
             
 class RunwayNode:
-    def __init__(self, start_time="", flight_id=""):
+    def __init__(self, start_time="", end_time="", flight_id=""):
         
-        if start_time != "":
-            start_date = start_time.split(" ")
-            start_date_time = start_date[1]
-            start_hour = start_date_time.split(":")
-
-            start_minute = start_hour[1]
-            start_hour = start_hour[0]
-
-            start_date = start_date[0]
-            start_year = start_date.split("-")
-
-            start_month = start_year[1]
-            start_day = start_year[2]
-            start_year = start_year[0]
-
-            start = datetime(start_year, start_month, start_day, start_hour, start_minute)
-
-            self.start_time = start.timestamp()
+        self.start_time = convert_time(start_time)
+        self.end_time = convert_time(end_time)
         self.flight_id = flight_id
         self.parent = None
         self.left = None
@@ -29,6 +15,10 @@ class RunwayNode:
     def get_start_time(self): #! from ai
         dt = datetime.fromtimestamp(self.start_time)
         return dt.strftime("%Y-%m-%d %H:%M")
+
+    def get_end_time(self): #! from ai
+            dt = datetime.fromtimestamp(self.end_time)
+            return dt.strftime("%Y-%m-%d %H:%M")
          
 
 class RunwayScheduler:
@@ -36,7 +26,8 @@ class RunwayScheduler:
         self.runway = runway
         self.root = None
 
-    def insert(self, node):
+    def insert(self, start_time, end_time, flight_id):
+        node = RunwayNode(start_time, end_time, flight_id)
         if self.root is None:
             self.root = node
             return {"success": True} 
@@ -88,7 +79,7 @@ class RunwayScheduler:
                 elif flight_id > current.flight_id:                                               
                     current = current.right                                                          
                 elif flight_id == current.flight_id:                                            
-                    return {"success": True, "noce": current} 
+                    return {"success": True, "node": current} 
 
         return {"success": False, "reason": "Node doesn't exist in tree"} 
 
@@ -168,8 +159,56 @@ class RunwayScheduler:
     def inorder_traverse(self, node):
         if node is not None:
             self.inorder_traverse(node.left)
-            print(f"Start Time: {node.get_start_time()} Flight ID: {node.flight_id}")
+            print(f"Start Time: {node.get_start_time()} End Time: {node.get_end_time()} Flight ID: {node.flight_id}")
             self.inorder_traverse(node.right)
 
+    def time_range_search(self, start_time, end_time):
+        start = 0
+        end = 0
+        start = convert_time(start_time)
+        end = convert_time(end_time)
 
-    #TODO: predecessor, successor and time-range search
+
+        flights_in_range = []
+        self.time_range_search_helper(self.root, start, end, flights_in_range)
+        return flights_in_range
+
+    def time_range_search_helper(self, current, start, end, flights_in_range):
+        if current is None:
+            return
+
+        if current.start_time >= start:
+            self.time_range_search_helper(current.left, start, end, flights_in_range)
+
+        if current.start_time < end and current.end_time > start:
+            flights_in_range.append(current)
+
+        if current.start_time <= end:
+            self.time_range_search_helper(current.right, start, end, flights_in_range)
+
+
+
+
+    def mass_closure(self, start_time, end_time):
+        flights = self.time_range_search(start_time, end_time)
+
+    def mass_cancel(self, start_time, end_time):
+        flights = self.time_range_search(start_time, end_time)
+        for flight in flights:
+            reg.cancel_flight(flight.flight_id)
+            self.delete(flight.start_time, flight.flight_id)
+            print(f"Cancelled flight with ID: {flight.flight_id}, start_time: {flight.get_start_time()}, end_time: {flight.get_end_time()}")
+
+    def cancel_runway(self, reg):
+        self.cancel_runway_helper(self.root, reg)
+        self.root = None
+
+    def cancel_runway_helper(self, node, reg):
+        if node is not None:
+            self._cancel_runway_helper(node.left, reg)
+            reg.cancel_flight(node.flight_id)
+            self._cancel_runway_helper(node.right, reg)
+
+
+
+    #TODO: predecessor, successor

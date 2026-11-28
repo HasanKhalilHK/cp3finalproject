@@ -1,5 +1,6 @@
 import random
 from flight_record import FlightRecord
+    
 
 class SlotState: #! from ai 
     empty = 0
@@ -52,6 +53,7 @@ class FlightRegistry:
         return (( (self.a * k + self.b) % self.p ) % self.m)
 
     def insert(self, record):
+        record = FlightRegistryRecord(record.flight_id, record.airline, record.origin, record.destination, record.runway, record.get_start_time(), record.get_end_time(), record.priority, record.status)
         if self.load_factor >= 0.75:
             self.rehash()
     
@@ -135,6 +137,44 @@ class FlightRegistry:
             i = (i + 1) % self.m #loop around if probing reaches end of table
 
         return {"success" : False, "reason": "Record doesn't exist", "probes" : probes}
+
+    def cancel_flight(self, flight_id):
+        res = self.lookup(flight_id)
+
+        if res["success"]:
+            record = res["record"]
+            if record.status == "CANCELLED":
+                return {"success": False, "reason": "Flight is already cancelled"}
+
+            record.status = "CANCELLED"
+            return {"success": True, "record": record}
+        else:
+            return {"success": False, "reason": res["reason"]}
+
+
+    def get_flights(self):
+        flights = []
+        for flight in self.table:
+            if flight.slot_state == SlotState.occupied:
+                flights.append(flight)
+        return flights
+
+    def counting_sort_by_priority(self, flights):
+        count = [0,0,0,0]
+        sorted_flights = [None] * len(flights)
+        for flight in flights:
+            count[int(flight.priority)] += 1
+
+        count[1] = count[1] + count[0]
+        count[2] = count[2] + count[1]
+        count[3] = count[3] + count[2]
+
+        for i in range(len(flights) - 1, -1, -1):
+            priority = int(flights[i].priority)
+            count[priority] -= 1
+            sorted_flights[count[priority]] = flights[i]
+
+        return sorted_flights
 
 
     def print_table(self):
